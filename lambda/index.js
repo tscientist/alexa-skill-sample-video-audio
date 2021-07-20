@@ -34,7 +34,7 @@ function getPersistenceAdapter(tableName) {
 }
 
 const BACKGROUND_IMAGE_URL = 'https://s3.amazonaws.com/cdn.dabblelab.com/img/echo-show-bg-blue.png',
-  VIDEO_URL = 'https://player.vimeo.com/external/382451257.hd.mp4?s=6278c472863626a3544b94ddabfd5791b6e47efd&profile_id=169&oauth2_token_id=1238288412',
+  VIDEO_URL = process.env.VIDEO_URL,
   VIDEO_TITLE = "Teste de video",
   VIDEO_SUBTITLE = "Reproduzindo video em uma Alexa Skill",
   TITLE = 'Skill de video',
@@ -44,35 +44,27 @@ const PlayVideoIntentHandler = {
   async canHandle(handlerInput) {
         const playbackInfo = await getPlaybackInfo(handlerInput);
         const request = handlerInput.requestEnvelope.request;
-        console.log('cheguei aqui')
+        
         if (!playbackInfo.inPlaybackSession) {
-                    console.log('cheguei aqui1')
-
             return request.type === 'IntentRequest' && request.intent.name === 'PlayAudio' || handlerInput.requestEnvelope.request.type === 'LaunchRequest' || request.type === 'IntentRequest' && request.intent.name === 'PlayVideoIntent';
         }
         
         if (request.type === 'PlaybackController.PlayCommandIssued') {
-                    console.log('cheguei aqui2')
-
             return true;
         }
     
         if (request.type === 'IntentRequest') {
-                    console.log('cheguei aqui3')
-
             return request.intent.name === 'PlayAudio' || request.intent.name === 'AMAZON.ResumeIntent' || request.intent.name === 'PlayVideoIntent'
         }
         
         if (request.type === 'LaunchRequest') {
-                    console.log('cheguei aqui3ss')
             return handlerInput.requestEnvelope.request.type === 'LaunchRequest'
         }
 
   },
   async handle(handlerInput) {
-    console.log('cheguei ate aqui')
-    if (supportsDisplay(handlerInput)) {
 
+    if (supportsDisplay(handlerInput)) {
       let backgroundImage = new Alexa.ImageHelper()
         .withDescription(TITLE)
         .addImageInstance(BACKGROUND_IMAGE_URL)
@@ -100,15 +92,8 @@ const PlayVideoIntentHandler = {
           .getResponse();
 
     } else {
-        console.log('oi')
         return controller.play(handlerInput);
-/*
-      handlerInput.responseBuilder
-        .withSimpleCard(TITLE, "This skill requires a device with the ability to play videos.")
-        .speak("The video cannot be played on your device. To watch this video, try launching this skill from an echo show device.");*/
     }
-
-
   },
 };
 
@@ -296,7 +281,7 @@ const controller = {
     playbackInfo.nextStreamEnqueued = false;
 
     responseBuilder
-      .speak(`Agora tocando ${podcast.title}`)
+      .speak(`Tocando ${podcast.title}`)
       .withShouldEndSession(true)
       .addAudioPlayerPlayDirective(playBehavior, podcast.url, token, offsetInMilliseconds, null);
 
@@ -381,7 +366,7 @@ const HelpIntentHandler = {
       && handlerInput.requestEnvelope.request.intent.name === 'AMAZON.HelpIntent';
   },
   handle(handlerInput) {
-    const speechText = 'Te ajudando';
+    const speechText = 'help';
 
     return handlerInput.responseBuilder
       .speak(speechText)
@@ -461,7 +446,6 @@ const LoadAttributesRequestInterceptor = {
 
         // Check if user is invoking the skill the first time and initialize preset values
         if (!persistentAttributes.playbackInfo && !persistentAttributes.playbackSetting) {
-            console.log('persistentAttributes', persistentAttributes)
             handlerInput.attributesManager.setPersistentAttributes({
                 firstAccess : true,
                 audioLessons : [],
@@ -491,8 +475,6 @@ const LoadAttributesRequestInterceptor = {
 const SaveAttributesResponseInterceptor = {
     async process(handlerInput, response) {
         const persistentAttributes = await handlerInput.attributesManager.getPersistentAttributes();
-
-        console.log('persistentAttributes para salvar', persistentAttributes);
 
         await handlerInput.attributesManager.savePersistentAttributes();
     }
